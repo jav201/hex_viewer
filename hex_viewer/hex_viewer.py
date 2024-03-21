@@ -100,63 +100,79 @@ class HexViewer:
             self.display_range(start_line, end_line)
     
     def difference(self, other):
-        # Check if the other object is an instance of HexViewer to ensure compatibility
         if not isinstance(other, HexViewer):
             print("Objects are not of the same type.")
             return
-        
-        # Create dictionaries of the sections in each HexViewer object, using section names as keys
+
         self_sections = {section['name']: section for section in self._sections}
         other_sections = {section['name']: section for section in other._sections}
-
-        # Check if the set of section names in both HexViewer objects are the same
         if set(self_sections.keys()) != set(other_sections.keys()):
             print("Objects do not have the same sections.")
             return
-        
-        # Iterate over each section in the current (self) HexViewer object
-        for name, self_section in self_sections.items():
-            # Get the matching section from the other HexViewer object by name
-            other_section = other_sections.get(name)
-            if not other_section:
-                # Skip the comparison if the section is not present in both objects
+
+        # Prepare to collect reports for both self and other
+        self_differences_report = []
+        other_differences_report = []
+
+        for name in self_sections.keys():
+            if name not in other_sections:
                 continue
-                
-            # Convert start and end addresses of the section from hexadecimal to integers for both HexViewer objects
-            start_address_self = int(self_section['start'], 16)
-            end_address_self = int(self_section['end'], 16)
-            start_address_other = int(other_section['start'], 16)
-            end_address_other = int(other_section['end'], 16)
-            
-            # Calculate the line numbers based on the assumption that each line represents 16 bytes of data
-            start_line_self = start_address_self // 16
-            end_line_self = end_address_self // 16
-            start_line_other = start_address_other // 16
-            end_line_other = end_address_other // 16
-            
-            # Capture the output of the display_range function as strings for both self and other
-            # Note: The capture_display_range method is assumed to redirect the output of display_range to a string
+
+            self_section = self_sections[name]
+            other_section = other_sections[name]
+
+            # Calculate line numbers
+            start_line_self, end_line_self = self._calculate_line_numbers(self_section)
+            start_line_other, end_line_other = self._calculate_line_numbers(other_section)
+
+            # Capture output for both self and other
             self_output = self.capture_display_range(start_line_self, end_line_self)
             other_output = other.capture_display_range(start_line_other, end_line_other)
-            
-            print(f"\nSection: {name}\n")
-            
-            # Split the captured outputs into lines for comparison
-            self_lines = self_output.splitlines()
-            other_lines = other_output.splitlines()
-            
-            # Iterate over the lines of the captured outputs, comparing them
-            for self_line, other_line in zip(self_lines, other_lines):
-                # If the lines differ, print the line from self with an asterisk to indicate a difference
-                if self_line != other_line:
-                    print(f"{self_line}    *")
-                else:
-                    # If the lines are the same, just print the line without an asterisk
-                    print(self_line)
 
-                    
-            # For sections in self not in other or vice versa, further handling can be added here
-            # For example, print the entire section data for the section that is not present in the other object
+            # Process and compare the outputs
+            self_report, other_report = self._process_section_differences(name, self_output, other_output)
+            self_differences_report.append(self_report)
+            other_differences_report.append(other_report)
+
+        # Write reports for both self and other
+        self._write_report(self_differences_report, self.file_path, other.file_path)
+        self._write_report(other_differences_report, other.file_path, self.file_path)
+
+    def _calculate_line_numbers(self, section):
+        start_address = int(section['start'], 16)
+        end_address = int(section['end'], 16)
+        start_line = start_address // 16
+        end_line = end_address // 16
+        return start_line, end_line
+
+    def _process_section_differences(self, section_name, self_output, other_output):
+        self_lines = self_output.splitlines()
+        other_lines = other_output.splitlines()
+        self_section_report = f"\nSection: {section_name}\n"
+        other_section_report = f"\nSection: {section_name}\n"
+
+        for self_line, other_line in zip(self_lines, other_lines):
+            if self_line != other_line:
+                self_section_report += f"{self_line}    *\n"
+                other_section_report += f"{other_line}    *\n"
+            else:
+                self_section_report += self_line + "\n"
+                other_section_report += other_line + "\n"
+
+        return self_section_report, other_section_report
+
+    def _write_report(self, report_content, file_path_1, file_path_2):
+        report_filename = f"{file_path_1}-vs-{file_path_2}-differences.txt"
+        with open(report_filename, 'w') as report_file:
+            for section_diff in report_content:
+                report_file.write(section_diff)
+        
+        print(f"Detailed report added to {report_filename}")
+
+
+        # Additional methods like capture_display_range need to be implemented accordingly.
+        # For sections in self not in other or vice versa, further handling can be added here
+        # For example, print the entire section data for the section that is not present in the other object
                      
     
     def capture_display_range(self, start_line, end_line):
