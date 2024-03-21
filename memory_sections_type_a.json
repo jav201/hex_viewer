@@ -1,0 +1,20 @@
+{   "data_type": "a",
+    "memory_sections": [
+      {
+        "name": "Section01",
+        "start": "0x00000",
+        "end": "0x00020"
+      },
+      {
+        "name": "Section02",
+        "start": "0x00030",
+        "end": "0x00100"
+      },
+      {
+        "name": "Section01",
+        "start": "0x00101",
+        "end": "0x00102"
+      }
+    ]
+  }
+  
